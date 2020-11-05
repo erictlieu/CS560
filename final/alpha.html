@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <meta charset="utf-8" />
+</head>
+<body style="padding: 0 10px;">
+<h1>Interactive Data Visualization with Movie Reviews: Alpha Release</h1>
+<h4>By Eric Lieu</h4>
+
+<h5>Overview: </h5>
+<p>This project will be an interactive data visualization dashboard using a dataset of movies and movie reviews.</p>
+<p>There will be a node-link diagram with movies as nodes and user reviews of same movies as edges.</p>
+<p>On the side would be a chord diagram displaying all genres and movies sharing those genres.</p>
+<p>Below the chord diagram would be a rating histogram.</p>
+
+<h5>Completed Features</h5>
+<p>Partial completed node-link diagram</p>
+<p>Histogram of ratings</p>
+
+<h5>Upcoming Milestones</h5>
+<p>Adding chord diagram of movie genres</p>
+<p>More updates to node-link diagram. (Detailed tooltip, color by average rating.</p>
+<p>By the Beta release, interactions between the visualizations.</p>
+
+<h5>Roadblocks</h5>
+<p>There is too much data for the node-link diagram to display properly with all movies and reviews. I selected the first 200 movies and also filtered by review amount as a possible fix.</p>
+
+<h5>Project</h5>
+<p>Below is the current progress of the project. (Takes a few seconds to load)</p>
+<div id="chart" style="text-align: center"></div>
+<script src="sketch.js"></script>
+</body>
+</html>
