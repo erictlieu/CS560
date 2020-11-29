@@ -1,13 +1,16 @@
 <!DOCTYPE html>
-<html>
-<body>
-
+<html lang="en">
+<head>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/2.5.1/d3-annotation.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="utf-8" />
+</head>
+<body style="padding: 0 10px; min-width: 1000px;">
 <h1>Interactive Data Visualization with Movie Reviews</h1>
 <h4>By Eric Lieu</h4>
-<p>This project will be an interactive data visualization dashboard using a dataset of movies and movie reviews.</p>
-<p>There will be a node-link diagram with movies as nodes and user reviews of same movies as edges.</p>
-<p>On the side would be a chord diagram displaying all genres and movies sharing those genres.</p>
-<p>Below the chord diagram would be a rating histogram.</p>
 
+<div id="chart" style="text-align: center"></div>
+<script src="sketch.js"></script>
 </body>
 </html>

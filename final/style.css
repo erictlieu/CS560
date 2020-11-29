@@ -16,21 +16,34 @@ html, body {
     opacity: 1;
     color: #000;
     padding: 5px;
-    width: 120px;
+    width: 150px;
     font-size: 15px;
     z-index: 120;
 }
 
-.tooltip p.main {
-  font-size: 15px;
-  text-align: center;
+.tooltip p {
   padding:0;
   margin:0;
 }
 
+.tooltip p.main {
+  font-size: 15px;
+  border-bottom: 1px solid black;
+}
+
 .tooltip p.sub {
   font-size: 12px;
-  text-align: left;
-  padding:0;
-  margin:0;
+}
+
+.tooltip p.small {
+  font-size: 8px;
+  border-top: 1px solid black;
+}
+
+.center {
+  text-align: center;
+}
+
+.annotation-group {
+  pointer-events: none;
 }
