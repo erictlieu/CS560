@@ -58,6 +58,7 @@ const simulation = d3.forceSimulation()
 filtered_genre = null;
 filtered_review = null;
 
+// Identify neighbors
 linkedByIndex = {}
 neighboring = (a, b) => {
     return linkedByIndex[a.id + "," + b.id] || linkedByIndex[b.id + "," + a.id]
@@ -88,6 +89,7 @@ Promise.all([d3.csv("data/movies_metadata.csv"), d3.csv("data/ratings_smaller.cs
         chord: {}
     };
 
+    // Movie Tooltip
     showMovieDetails = (i, d) => {
         content = '<p class="main center">' + d.title + '</p>'
         content += '<p class="sub center">' + d.genres.map(v => v.name).join(' ') + '</p>'
@@ -148,11 +150,8 @@ Promise.all([d3.csv("data/movies_metadata.csv"), d3.csv("data/ratings_smaller.cs
             .domain([0, d3.max(data.nodes.map(d => d.reviews.length))])
             .range([0, 28])
 
-        svg.append("text")
-            .attr("transform", "translate(-470,-400)")
-            .attr("text-anchor", "middle")
-            .attr("fill", "black")
-            .text("# of Reviews")
+        var color = d3.scaleSequential(d3.interpolateOranges)
+            .domain([0, 100])
 
         svg.append("a")
             .attr("transform", "translate(-600,495)")
@@ -162,26 +161,35 @@ Promise.all([d3.csv("data/movies_metadata.csv"), d3.csv("data/ratings_smaller.cs
             .append("text")
                 .text("Data Source: https://www.kaggle.com/rounakbanik/the-movies-dataset")
 
+        svg.append("text")
+            .attr("transform", "translate(-550,-280)")
+            .attr("text-anchor", "middle")
+            .attr("fill", "black")
+            .text("# of Reviews")
+
+        // Legend for node-link diagram
         svg.append("g")
             .attr("class", "legend")
             .attr("transform", "translate(-570,-470)")
-            .attr("text-anchor", "middle")
             .selectAll("g")
                 .data([100, 50, 25, 10, 5])
                 .join("g")
                 .append("circle")
                     .attr("r", d => radius(d))
-                    .attr("cx", (d, i) => 50 * i)
-                    .attr("cy", (d, i) => 35 - radius(d))
-                    .attr("fill", "#777")
+                    .attr("cx", (d, i) => 0)
+                    .attr("cy", (d, i) => 2 * d3.sum([100, 50, 25, 10, 5].filter((d2, i2) => i2 < i).map(radius)) + radius(d) + 5*i)
+                    .attr("fill", d => color(d))
                     .select(function() {
                       return this.parentNode;
                     })
                 .append("text")
-                    .attr("dx", (d, i) => 50 * i)
-                    .attr("dy", 50)
+                    .attr("text-anchor", "start")
+                    .attr("dominant-baseline", "middle")
+                    .attr("dx", radius(100) + 10)
+                    .attr("dy", (d, i) => 2 * d3.sum([100, 50, 25, 10, 5].filter((d2, i2) => i2 < i).map(radius)) + radius(d) + 5*i)
                     .text(d => d)
 
+        // Set node data for position and orientation
         // calculate theta for each node
         data.nodes.forEach(function(d, i) {
             // calculate polar coordinates
@@ -193,6 +201,7 @@ Promise.all([d3.csv("data/movies_metadata.csv"), d3.csv("data/ratings_smaller.cs
             d.y = - radial * Math.cos(theta);
             d.angle = theta;
             d.radius = radius(d.reviews.length); //2 * Math.sqrt(d.reviews.length);
+            d.color = color(d.reviews.length);
             d.offsetX = (radial + d.radius) * Math.sin(theta);
             d.offsetY = - (radial + d.radius) * Math.cos(theta);
         });
@@ -209,7 +218,7 @@ Promise.all([d3.csv("data/movies_metadata.csv"), d3.csv("data/ratings_smaller.cs
             .append("circle")
               .attr("cx", d => d.radius)
               .attr("r", d => d.radius)
-              .attr("fill", "#777")
+              .attr("fill", d => d.color)
               .on("mouseover", showMovieDetails)
               .on("mouseout", hideMovieDetails)
               .select(function() {
@@ -241,42 +250,63 @@ Promise.all([d3.csv("data/movies_metadata.csv"), d3.csv("data/ratings_smaller.cs
               .attr("d", linkCurve);
 
         data.node_link.radius = radius
+        data.node_link.color = color
     }
 
+    // Genre hover functionality
     mouseover_genre = function(e, d) {
         svg2.select("g.chord_outer").selectAll("g")
-            .style("opacity", x => d.index === x.index ? 1.0:0.3)
+            .style("opacity", x => d.index === x.index ? 1.0:0.2)
+
+        svg2.select("g.chord_outer").selectAll("path")
+            .style("fill", x => d.index === x.index ? colors[x.index % 10]:'gray')
+            .style("stroke", x => d.index === x.index ? colors[x.index % 10]:'gray')
 
         svg2.select("g.chord_text").selectAll("g")
-            .style("opacity", x => d.index === x.index ? 1.0:0.3)
+            .style("opacity", x => d.index === x.index ? 1.0:0.2)
 
         svg2.select("g.chord_links").selectAll("path")
-            .style("opacity", x => x.source.index === d.index || x.target.index === d.index ? 1.0:0.3)
+            .style("fill", x => x.source.index === d.index || x.target.index === d.index ? colors[x.source.index % 10]:'gray')
+            .style("stroke", x => x.source.index === d.index || x.target.index === d.index ? colors[x.source.index % 10]:'gray')
+            .style("opacity", x => x.source.index === d.index || x.target.index === d.index ? 1.0:0.2)
     }
 
     mouseout_genre = function(e, d) {
         if(filtered_genre) {
             svg2.select("g.chord_outer").selectAll("g")
-                .style("opacity", x => data.genresOrdered[x.index][0] === filtered_genre ? 1.0:0.3)
+                .style("opacity", x => data.genresOrdered[x.index][0] === filtered_genre ? 1.0:0.2)
+
+            svg2.select("g.chord_outer").selectAll("path")
+                .style("fill", x => data.genresOrdered[x.index][0] === filtered_genre ? colors[x.index % 10]:'gray')
+                .style("stroke", x => data.genresOrdered[x.index][0] === filtered_genre ? colors[x.index % 10]:'gray')
 
             svg2.select("g.chord_text").selectAll("g")
-                .style("opacity", x => data.genresOrdered[x.index][0] === filtered_genre ? 1.0:0.3)
+                .style("opacity", x => data.genresOrdered[x.index][0] === filtered_genre ? 1.0:0.2)
 
             svg2.select("g.chord_links").selectAll("path")
-                .style("opacity", x => data.genresOrdered[x.source.index][0] === filtered_genre || data.genresOrdered[x.target.index][0] === filtered_genre ? 1.0:0.3)
+                .style("fill", x => data.genresOrdered[x.source.index][0] === filtered_genre || data.genresOrdered[x.target.index][0] === filtered_genre ? colors[x.source.index % 10]:'gray')
+                .style("stroke", x => data.genresOrdered[x.source.index][0] === filtered_genre || data.genresOrdered[x.target.index][0] === filtered_genre ? colors[x.source.index % 10]:'gray')
+                .style("opacity", x => data.genresOrdered[x.source.index][0] === filtered_genre || data.genresOrdered[x.target.index][0] === filtered_genre ? 1.0:0.2)
         }
         else {
             svg2.select("g.chord_outer").selectAll("g")
                 .style("opacity", 1.0)
 
+            svg2.select("g.chord_outer").selectAll("path")
+                .style("fill", x => colors[x.index % 10])
+                .style("stroke", x => colors[x.index % 10])
+
             svg2.select("g.chord_text").selectAll("g")
                 .style("opacity", 1.0)
 
             svg2.select("g.chord_links").selectAll("path")
+                .style("fill", x => colors[x.source.index % 10])
+                .style("stroke", x => colors[x.source.index % 10])
                 .style("opacity", 0.3)
         }
     }
 
+    // Genre click functionality
     filter_genre = function(e, d) {
         if(filtered_genre === data.genresOrdered[d.index][0]) {
             filtered_genre = null
@@ -301,6 +331,7 @@ Promise.all([d3.csv("data/movies_metadata.csv"), d3.csv("data/ratings_smaller.cs
         redraw_histogram(filtered_genre)
     }
 
+    // Review brush functionality
     filter_review = function(event) {
         if (event.sourceEvent.type === "brush") return;
 
@@ -461,13 +492,10 @@ Promise.all([d3.csv("data/movies_metadata.csv"), d3.csv("data/ratings_smaller.cs
             .attr("fill", "black")
             .text("Ratings")
 
-        // set the parameters for the histogram
         hist = d3.histogram()
-            .value(function(d) { return +d.rating; })   // I need to give the vector of value
-            .domain(x.domain())  // then the domain of the graphic
-            .thresholds(x.ticks(10)); // then the numbers of bins
-
-        // And apply this function to data to get the bins
+            .value(function(d) { return +d.rating; })
+            .domain(x.domain())
+            .thresholds(x.ticks(10));
 
         movies = Array.from(data.movies.entries())
         let revs = movies.reduce(function(arr, obj) {
@@ -478,17 +506,17 @@ Promise.all([d3.csv("data/movies_metadata.csv"), d3.csv("data/ratings_smaller.cs
         var bins = hist(revs);
         bins = bins.filter(d => d.x1 != d.x0)
 
-        // Y axis: scale and draw:
         var y = d3.scaleLinear()
             .range([height, 0]);
-        y.domain([0, d3.max(bins, function(d) { return d.length; })]);   // d3.hist has to be called before the Y axis obviously
+        y.domain([0, d3.max(bins, function(d) { return d.length; })]);
 
+        // Draw axis
         svg3.append("g")
             .attr("class", "y-axis")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
             .call(d3.axisLeft(y));
 
-        // append the bar rectangles to the svg element
+        // Draw bins
         svg3.selectAll("rect")
             .data(bins)
             .enter()
@@ -500,6 +528,7 @@ Promise.all([d3.csv("data/movies_metadata.csv"), d3.csv("data/ratings_smaller.cs
               .attr("height", function(d) { return height - y(d.length); })
               .style("fill", "#69b3a2")
 
+        // Brush functionality
         svg3.call(d3.brushX().extent([[margin.left, margin.top], [margin.left + width, margin.top + height]]).on("brush end", filter_review));
 
         data.histogram.margin = margin
@@ -517,6 +546,7 @@ Promise.all([d3.csv("data/movies_metadata.csv"), d3.csv("data/ratings_smaller.cs
     annotations()
 })
 
+// Set movie data from movies and link files
 function getMovieData(metadataFile, linksFile) {
     let movie_data = metadataFile.reduce(function(map, obj) {
         obj.genres = JSON.parse(obj.genres.replace(/'/g, '"'));
@@ -542,6 +572,7 @@ function getMovieData(metadataFile, linksFile) {
     return movies;
 }
 
+// Get all genres of movie dataset
 function getGenreData(movies) {
     let genres = new Map();
     movies.forEach(function(m) {
@@ -567,11 +598,13 @@ function getGenreData(movies) {
     }
 }
 
+// Group reviews by user and select only first 200
 function getGroups(reviewsFile) {
     let groups = d3.group(reviewsFile, d => d.userId);
     return Array.from(groups.values()).slice(0, 200)  ;
 }
 
+// Identify movie pairs for each user
 function getSameReviews(groups, movies) {
     let same_reviews = groups.reduce(function(map, obj) {
         obj.forEach(function(d1, k1) {
@@ -608,6 +641,7 @@ function getSameReviews(groups, movies) {
     return flat_same_reviews
 }
 
+// Add reviews to movies
 function updateMovies(movies, groups) {
     groups.forEach(function(d) {
         d.forEach(function(review) {
@@ -622,6 +656,7 @@ function updateMovies(movies, groups) {
     return movies;
 }
 
+// Calculate nodes and edges. The top 100 pairs are selected and only those movies are shown.
 function getNodeData(reviews, movies, genre = null) {
     linkedByIndex = {}
     let links = reviews.slice(0, 100)
@@ -654,6 +689,7 @@ function getNodeData(reviews, movies, genre = null) {
     }
 }
 
+// Get matrix of movies genre pairings
 function getChordMatrix(movies, genres) {
     matrix = [];
     for(var i = 0; i < genres.size; i++) {
@@ -676,6 +712,7 @@ function getChordMatrix(movies, genres) {
     return matrix
 }
 
+// Function to draw curves for node-link diagram instead of lines
 function linkCurve(d) {
     var lineData = [{
         x: Math.round(d.target.x),
@@ -694,6 +731,7 @@ function linkCurve(d) {
     return `M${lineData[0].x},${lineData[0].y}C${lineData[1].x},${lineData[1].y},${lineData[2].x},${lineData[2].y},${lineData[3].x},${lineData[3].y} `;
 }
 
+// Update function for histogram when genre is filtered
 function redraw_histogram(genre) {
     var duration = 300
 
@@ -720,6 +758,7 @@ function redraw_histogram(genre) {
         .range([data.histogram.height, 0])
         .domain([0, new_max]);
 
+    // Update histogram scale depending if axis need to grow then update or shrink and update
     if(old_max < new_max) {
         svg3.select("g.y-axis")
             .transition()
@@ -733,7 +772,6 @@ function redraw_histogram(genre) {
               .attr("transform", function(d) { return "translate(" + (x(d.x0 - 0.25) + data.histogram.margin.left) + "," + (new_y(d.length) + data.histogram.margin.top) + ")"; })
               .attr("height", function(d) { return data.histogram.height - new_y(d.length); })
 
-        // append the bar rectangles to the svg element
         setTimeout(function() {
             svg3.selectAll("rect")
                 .data(bins)
@@ -744,7 +782,6 @@ function redraw_histogram(genre) {
         }, duration)
     }
     else {
-        // append the bar rectangles to the svg element
         svg3.selectAll("rect")
             .data(bins)
               .transition()
@@ -776,25 +813,26 @@ function redraw_histogram(genre) {
     annotations()
 }
 
+// Update function for node-link diagram when genres or ratings is filtered
 function redraw_node_link(filtered_nodes, filtered_links) {
     var scale = d3.scaleLinear()
         .domain([0, filtered_nodes.length])
         .range([0, 2 * Math.PI]);
 
-    // calculate theta for each node
     filtered_nodes.forEach(function(d, i) {
-                               // calculate polar coordinates
-                               var theta  = scale(i);
-                               var radial = 250;
+         // calculate polar coordinates
+         var theta  = scale(i);
+         var radial = 250;
 
-                               // convert to cartesian coordinates
-                               d.x = radial * Math.sin(theta);
-                               d.y = - radial * Math.cos(theta);
-                               d.angle = theta;
-                               d.radius = data.node_link.radius(d.reviews.filter(v => filtered_review == null || filtered_review.indexOf(+v.rating) !== -1).length);
-                               d.offsetX = (radial + d.radius) * Math.sin(theta);
-                               d.offsetY = - (radial + d.radius) * Math.cos(theta);
-                           });
+         // convert to cartesian coordinates
+         d.x = radial * Math.sin(theta);
+         d.y = - radial * Math.cos(theta);
+         d.angle = theta;
+         d.radius = data.node_link.radius(d.reviews.filter(v => filtered_review == null || filtered_review.indexOf(+v.rating) !== -1).length);
+         d.color = data.node_link.color(d.reviews.filter(v => filtered_review == null || filtered_review.indexOf(+v.rating) !== -1).length);
+         d.offsetX = (radial + d.radius) * Math.sin(theta);
+         d.offsetY = - (radial + d.radius) * Math.cos(theta);
+     });
 
     data.node = data.node
         .data(filtered_nodes, d => d.id)
@@ -803,7 +841,7 @@ function redraw_node_link(filtered_nodes, filtered_links) {
               .append("circle")
                 .attr("cx", d => d.radius)
                 .attr("r", d => d.radius)
-                .attr("fill", "#777")
+                .attr("fill", d => d.color)
                 .on("mouseover", showMovieDetails)
                 .on("mouseout", hideMovieDetails)
                 .select(function() {
@@ -828,7 +866,7 @@ function redraw_node_link(filtered_nodes, filtered_links) {
          .select("circle")
             .attr("cx", d => d.radius)
             .attr("r", d => d.radius)
-            .attr("fill", "#777")
+            .attr("fill", d => d.color)
             .on("mouseover", showMovieDetails)
             .on("mouseout", hideMovieDetails)
             .select(function() {
@@ -860,6 +898,7 @@ function redraw_node_link(filtered_nodes, filtered_links) {
     simulation.force("link").links(filtered_links);
 }
 
+// Helper function to check if arrays are equal
 function arrayEquality(a, b) {
     if(a === b) return true;
     if(a == null || b == null) return false;
@@ -875,6 +914,7 @@ function arrayEquality(a, b) {
     return equals;
 }
 
+// Adding annotations to all visualizations
 function annotations() {
     /* https://d3-annotation.susielu.com/ */
     const annotations1 = [{
@@ -882,7 +922,6 @@ function annotations() {
       note: {
         label: "The top movie connections are shown",
       },
-      //can use x, y directly instead of data
       x: 400,
       y: -300,
       dx: 50,
@@ -894,13 +933,13 @@ function annotations() {
       note: {
         label: "The largest genre pairing is {Drama and Romance} (1278 movies) followed by {Comedy and Drama} (1236 movies)",
       },
-      //can use x, y directly instead of data
       x: -390,
       y: -310,
       dx: 0,
       dy: 0,
     }]
 
+    // Calculate the median rating score for last annotation
     bins = data.histogram.bins.map(v=>v.length)
     total = d3.sum(bins)
     sum = 0
@@ -918,7 +957,6 @@ function annotations() {
       note: {
         label: "Half of total reviews have ratings " + rating.toFixed(1) + " and higher",
       },
-      //can use x, y directly instead of data
       x: data.histogram.x(rating - 0.25) + data.histogram.margin.left,
       y: 50,
       dx: - data.histogram.x(rating - 0.25) + 150,
@@ -930,22 +968,16 @@ function annotations() {
     }]
 
     const makeAnnotations1 = d3.annotation()
-      //also can set and override in the note.padding property
-      //of the annotation object
       .notePadding(15)
       .type(d => d.type)
       .annotations(annotations1)
 
     const makeAnnotations2 = d3.annotation()
-      //also can set and override in the note.padding property
-      //of the annotation object
       .notePadding(15)
       .type(d => d.type)
       .annotations(annotations2)
 
     const makeAnnotations3 = d3.annotation()
-      //also can set and override in the note.padding property
-      //of the annotation object
       .notePadding(15)
       .type(d => d.type)
       .annotations(annotations3)
